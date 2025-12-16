@@ -336,7 +336,7 @@ const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({ navigation }) => 
               style={[
                 styles.input,
                 styles.textArea,
-                errors.quote && styles.inputError,
+                errors.quote ? styles.inputError : undefined,
               ]}
               placeholder="Enter your quote here..."
               placeholderTextColor="#9ca3af"
@@ -361,7 +361,7 @@ const CreateQuoteScreen: React.FC<CreateQuoteScreenProps> = ({ navigation }) => 
             <TextInput
               style={[
                 styles.input,
-                errors.author && styles.inputError,
+                errors.author ? styles.inputError : undefined,
               ]}
               placeholder="Who said this quote?"
               placeholderTextColor="#9ca3af"

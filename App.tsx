@@ -26,7 +26,6 @@ const HomeStack = () => {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        cardStyle: { backgroundColor: '#fff' },
       }}
     >
       <Stack.Screen name="HomeMain" component={HomeScreen} />
@@ -61,7 +60,6 @@ const SearchStack = () => {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        cardStyle: { backgroundColor: '#fff' },
       }}
     >
       <Stack.Screen name="SearchMain" component={SearchScreen} />
@@ -96,7 +94,6 @@ const LeaderboardStack = () => {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        cardStyle: { backgroundColor: '#fff' },
       }}
     >
       <Stack.Screen name="LeaderboardMain" component={LeaderboardScreen} />
@@ -120,7 +117,6 @@ const ProfileStack = () => {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
-        cardStyle: { backgroundColor: '#fff' },
       }}
     >
       <Stack.Screen name="ProfileMain" component={ProfileScreen} />
@@ -226,7 +222,7 @@ export default function App() {
       <NavigationContainer onReady={onLayoutRootView}>
         <TabNavigator />
       </NavigationContainer>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+      <StatusBar style="dark" backgroundColor="#fff" />
     </>
   );
 }
