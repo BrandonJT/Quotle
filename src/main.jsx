@@ -3,11 +3,19 @@ import * as SplashScreen from 'expo-splash-screen';
 import App from './App.jsx';
 
 // Keep the splash screen visible while we fetch resources
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {
+  // Catch error if preventAutoHideAsync fails
+});
 
-// Hide splash screen after app mounts
-setTimeout(() => {
-  SplashScreen.hideAsync();
-}, 500);
+// Hide splash screen immediately
+const hideSplash = async () => {
+  try {
+    await SplashScreen.hideAsync();
+  } catch (e) {
+    // Ignore errors
+  }
+};
+
+hideSplash();
 
 registerRootComponent(App);

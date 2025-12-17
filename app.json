@@ -11,8 +11,20 @@
       "web"
     ],
     "updates": {
-      "enabled": false
+      "enabled": false,
+      "checkAutomatically": "OFF"
     },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ]
+    ],
     "ios": {
       "bundleIdentifier": "com.anonymous.hello-world-app"
     },
