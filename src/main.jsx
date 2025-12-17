@@ -1,5 +1,4 @@
-import React from 'react';
-import { AppRegistry } from 'react-native';
+import { registerRootComponent } from 'expo';
 import App from './App.jsx';
 
-AppRegistry.registerComponent('main', () => App);
+registerRootComponent(App);
