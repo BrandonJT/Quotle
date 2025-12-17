@@ -10,8 +10,14 @@
       "android",
       "web"
     ],
+    "updates": {
+      "enabled": false
+    },
     "ios": {
       "bundleIdentifier": "com.anonymous.hello-world-app"
+    },
+    "android": {
+      "package": "com.anonymous.helloworldapp"
     }
   }
 }
