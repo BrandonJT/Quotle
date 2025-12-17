@@ -8,6 +8,8 @@ import {
   StyleSheet,
   Modal,
   ActivityIndicator,
+  Animated,
+  PanResponder,
 } from 'react-native';
 import { quotesDatabase } from '../data/quotesDatabase';
 
@@ -69,7 +71,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 12,
     padding: 20,
-    marginBottom: 16,
+    marginBottom: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
@@ -194,6 +196,32 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: 20,
   },
+  quoteCardContainer: {
+    marginBottom: 16,
+    overflow: 'hidden',
+    borderRadius: 12,
+    position: 'relative',
+    backgroundColor: '#f5f5f5',
+  },
+  quoteCardAnimated: {
+    zIndex: 1,
+  },
+  deleteAction: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: '#e74c3c',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+    borderRadius: 12,
+    zIndex: 0,
+    minHeight: 20,
+  },
+  deleteIcon: {
+    fontSize: 32,
+  },
 });
 
 export default function HomeScreen() {
@@ -296,6 +324,98 @@ export default function HomeScreen() {
     setSearchResults(searchResults.filter(r => r._id !== quote._id));
   };
 
+  const deleteQuote = (quoteId) => {
+    setQuotes(quotes.filter(q => q.id !== quoteId));
+  };
+
+  const SwipeableQuoteCard = ({ quote, index }) => {
+    const pan = useRef(new Animated.Value(0)).current;
+
+    const panResponder = useRef(
+      PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: (evt, gestureState) => Math.abs(gestureState.dx) > 5,
+        onPanResponderMove: (evt, gestureState) => {
+          // Only allow swiping left (negative values)
+          if (gestureState.dx <= 0) {
+            // Constrain to max swipe of 80 (width of delete button)
+            const newValue = Math.max(gestureState.dx, -80);
+            pan.setValue(newValue);
+          }
+        },
+        onPanResponderRelease: (evt, gestureState) => {
+          if (gestureState.dx < -40) {
+            // Snap to open position (show delete button)
+            Animated.spring(pan, {
+              toValue: -80,
+              tension: 50,
+              friction: 10,
+              useNativeDriver: true,
+            }).start();
+          } else {
+            // Snap back to closed position
+            Animated.spring(pan, {
+              toValue: 0,
+              tension: 50,
+              friction: 10,
+              useNativeDriver: true,
+            }).start();
+          }
+        },
+      })
+    ).current;
+
+    return (
+      <View style={styles.quoteCardContainer}>
+        <TouchableOpacity 
+          style={styles.deleteAction}
+          onPress={() => deleteQuote(quote.id)}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.deleteIcon}>🗑️</Text>
+        </TouchableOpacity>
+        <Animated.View
+          style={[
+            styles.quoteCardAnimated,
+            {
+              transform: [{ translateX: pan }],
+            },
+          ]}
+          {...panResponder.panHandlers}
+        >
+          <View style={styles.quoteCard}>
+            <Text style={styles.quoteText}>"{quote.text}"</Text>
+            <View style={styles.quoteAuthor}>
+              <View style={styles.authorAvatar}>
+                <Text style={styles.authorAvatarText}>
+                  {quote.author.charAt(0)}
+                </Text>
+              </View>
+              <Text style={styles.authorName}>~{quote.author}</Text>
+            </View>
+            <Text style={styles.quoteFooter}>Discoverer: {quote.discoverer}</Text>
+            <View style={styles.quoteActions}>
+              <TouchableOpacity 
+                style={styles.actionBtn}
+                onPress={() => handleLikePress(quote.id)}
+              >
+                <Text style={{
+                  fontSize: 14,
+                  color: likedQuotes.has(quote.id) ? '#e74c3c' : '#999',
+                }}>
+                  {likedQuotes.has(quote.id) ? '❤️' : '🤍'} {quote.likes}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.actionBtn}>
+                <Text style={styles.actionBtnText}>📤 Share</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Animated.View>
+      </View>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -332,34 +452,7 @@ export default function HomeScreen() {
         ref={scrollViewRef}
       >
         {quotes.map((quote, index) => (
-          <View key={quote.id} style={styles.quoteCard}>
-            <Text style={styles.quoteText}>"{quote.text}"</Text>
-            <View style={styles.quoteAuthor}>
-              <View style={styles.authorAvatar}>
-                <Text style={styles.authorAvatarText}>
-                  {quote.author.charAt(0)}
-                </Text>
-              </View>
-              <Text style={styles.authorName}>~{quote.author}</Text>
-            </View>
-            <Text style={styles.quoteFooter}>Discoverer: {quote.discoverer}</Text>
-            <View style={styles.quoteActions}>
-              <TouchableOpacity 
-                style={styles.actionBtn}
-                onPress={() => handleLikePress(quote.id)}
-              >
-                <Text style={{
-                  fontSize: 14,
-                  color: likedQuotes.has(quote.id) ? '#e74c3c' : '#999',
-                }}>
-                  {likedQuotes.has(quote.id) ? '❤️' : '🤍'} {quote.likes}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.actionBtn}>
-                <Text style={styles.actionBtnText}>📤 Share</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          <SwipeableQuoteCard key={quote.id} quote={quote} index={index} />
         ))}
       </ScrollView>
 
