@@ -6,7 +6,10 @@ import {
   TouchableOpacity,
   ScrollView,
   StyleSheet,
+  Modal,
+  ActivityIndicator,
 } from 'react-native';
+import { quotesDatabase } from '../data/quotesDatabase';
 
 const styles = StyleSheet.create({
   container: {
@@ -128,11 +131,77 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
   },
+  searchResultsModal: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  searchResultsContainer: {
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '90%',
+    paddingHorizontal: 16,
+    paddingTop: 20,
+  },
+  searchResultsHeader: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 16,
+    color: '#333',
+  },
+  searchResultCard: {
+    backgroundColor: '#f9f9f9',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  searchResultText: {
+    fontSize: 14,
+    color: '#333',
+    marginBottom: 12,
+    lineHeight: 20,
+  },
+  searchResultAuthor: {
+    fontSize: 13,
+    color: '#666',
+    fontStyle: 'italic',
+    marginBottom: 12,
+  },
+  addQuoteBtn: {
+    backgroundColor: '#667eea',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addQuoteBtnText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  noResultsText: {
+    fontSize: 14,
+    color: '#999',
+    textAlign: 'center',
+    paddingVertical: 20,
+  },
 });
 
 export default function HomeScreen() {
   const [searchTerm, setSearchTerm] = useState('');
   const [likedQuotes, setLikedQuotes] = useState(new Set());
+  const [searchResults, setSearchResults] = useState([]);
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [quotes, setQuotes] = useState([
     {
       id: 1,
@@ -179,6 +248,54 @@ export default function HomeScreen() {
     setQuotes(updatedQuotes);
   };
 
+  const handleSearch = async () => {
+    if (!searchTerm.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    setIsSearching(true);
+    setShowSearchModal(true);
+
+    try {
+      // Search through local database
+      const searchLower = searchTerm.toLowerCase();
+      const filtered = quotesDatabase.filter(quote =>
+        quote.content.toLowerCase().includes(searchLower) ||
+        quote.author.toLowerCase().includes(searchLower)
+      );
+
+      // If no exact matches, do a fuzzy match on individual words
+      if (filtered.length === 0) {
+        const keywords = searchLower.split(' ').filter(word => word.length > 2);
+        const fuzzyMatches = quotesDatabase.filter(quote => {
+          const quoteLower = quote.content.toLowerCase() + ' ' + quote.author.toLowerCase();
+          return keywords.some(keyword => quoteLower.includes(keyword));
+        });
+        setSearchResults(fuzzyMatches.slice(0, 20));
+      } else {
+        setSearchResults(filtered.slice(0, 20));
+      }
+    } catch (error) {
+      console.error('Error searching quotes:', error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const addQuoteToHome = (quote) => {
+    const newQuote = {
+      id: Math.max(...quotes.map(q => q.id), 0) + 1,
+      text: quote.content,
+      author: quote.author,
+      discoverer: 'You',
+      likes: 0,
+    };
+    setQuotes([...quotes, newQuote]);
+    setSearchResults(searchResults.filter(r => r._id !== quote._id));
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -189,15 +306,20 @@ export default function HomeScreen() {
         <View style={styles.searchContainer}>
           <TextInput
             style={styles.searchInput}
-            placeholder="Search"
+            placeholder="Search quotes..."
             value={searchTerm}
             onChangeText={setSearchTerm}
+            onSubmitEditing={handleSearch}
             placeholderTextColor="#999"
+            returnKeyType="search"
           />
           {searchTerm.length > 0 && (
             <TouchableOpacity
               style={styles.searchClear}
-              onPress={() => setSearchTerm('')}
+              onPress={() => {
+                setSearchTerm('');
+                setShowSearchModal(false);
+              }}
             >
               <Text style={styles.searchClearText}>✕</Text>
             </TouchableOpacity>
@@ -240,6 +362,59 @@ export default function HomeScreen() {
           </View>
         ))}
       </ScrollView>
+
+      <Modal
+        visible={showSearchModal}
+        animationType="slide"
+        onRequestClose={() => setShowSearchModal(false)}
+        transparent={true}
+      >
+        <View style={styles.searchResultsModal}>
+          <View style={styles.searchResultsContainer}>
+            <Text style={styles.searchResultsHeader}>Search Results</Text>
+            
+            {isSearching ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#667eea" />
+              </View>
+            ) : searchResults.length === 0 ? (
+              <Text style={styles.noResultsText}>
+                {searchTerm.trim() ? 'No quotes found. Try a different search.' : 'Enter a search term to find quotes.'}
+              </Text>
+            ) : (
+              <ScrollView showsVerticalScrollIndicator={true}>
+                {searchResults.map((quote, index) => (
+                  <View key={quote._id || index} style={styles.searchResultCard}>
+                    <Text style={styles.searchResultText}>"{quote.content}"</Text>
+                    <Text style={styles.searchResultAuthor}>— {quote.author}</Text>
+                    <TouchableOpacity 
+                      style={styles.addQuoteBtn}
+                      onPress={() => addQuoteToHome(quote)}
+                    >
+                      <Text style={styles.addQuoteBtnText}>➕ Add to Home</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+                <View style={{ height: 20 }} />
+              </ScrollView>
+            )}
+            
+            <TouchableOpacity 
+              style={{ paddingVertical: 16 }}
+              onPress={() => setShowSearchModal(false)}
+            >
+              <Text style={{ 
+                fontSize: 16, 
+                color: '#667eea', 
+                textAlign: 'center',
+                fontWeight: '600'
+              }}>
+                Close
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
