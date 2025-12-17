@@ -21,6 +21,7 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingVertical: 20,
+    paddingTop: 50,
     backgroundColor: 'white',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
@@ -61,6 +62,43 @@ const styles = StyleSheet.create({
   searchClearText: {
     fontSize: 18,
     color: '#999',
+  },
+  autocompleteContainer: {
+    position: 'absolute',
+    top: 150,
+    left: 16,
+    right: 16,
+    backgroundColor: 'white',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    maxHeight: 300,
+    zIndex: 1000,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  autocompleteSuggestion: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  autocompleteSuggestionLast: {
+    borderBottomWidth: 0,
+  },
+  autocompleteSuggestionText: {
+    fontSize: 14,
+    color: '#333',
+    marginBottom: 4,
+    lineHeight: 20,
+  },
+  autocompleteSuggestionAuthor: {
+    fontSize: 12,
+    color: '#999',
+    fontStyle: 'italic',
   },
   quotesContainer: {
     flex: 1,
@@ -226,6 +264,8 @@ const styles = StyleSheet.create({
 
 export default function HomeScreen() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [autocompleteSuggestions, setAutocompleteSuggestions] = useState([]);
+  const [showAutocomplete, setShowAutocomplete] = useState(false);
   const [likedQuotes, setLikedQuotes] = useState(new Set());
   const [searchResults, setSearchResults] = useState([]);
   const [showSearchModal, setShowSearchModal] = useState(false);
@@ -255,6 +295,41 @@ export default function HomeScreen() {
   ]);
 
   const scrollViewRef = useRef(null);
+
+  const handleSearchInput = (text) => {
+    setSearchTerm(text);
+    
+    if (text.trim().length === 0) {
+      setAutocompleteSuggestions([]);
+      setShowAutocomplete(false);
+      return;
+    }
+
+    // Filter quotes for autocomplete
+    const searchLower = text.toLowerCase();
+    const suggestions = quotesDatabase.filter(quote =>
+      quote.content.toLowerCase().includes(searchLower) ||
+      quote.author.toLowerCase().includes(searchLower)
+    ).slice(0, 5); // Limit to 5 suggestions
+
+    setAutocompleteSuggestions(suggestions);
+    setShowAutocomplete(suggestions.length > 0);
+  };
+
+  const handleAutocompleteSuggestionPress = (quote) => {
+    setSearchTerm(quote.content);
+    setShowAutocomplete(false);
+    
+    // Trigger search with the selected quote
+    const searchLower = quote.content.toLowerCase();
+    const filtered = quotesDatabase.filter(q =>
+      q.content.toLowerCase().includes(searchLower) ||
+      q.author.toLowerCase().includes(searchLower)
+    );
+    
+    setSearchResults(filtered.slice(0, 20));
+    setShowSearchModal(true);
+  };
 
   const handleLikePress = (quoteId) => {
     const isLiked = likedQuotes.has(quoteId);
@@ -428,7 +503,7 @@ export default function HomeScreen() {
             style={styles.searchInput}
             placeholder="Search quotes..."
             value={searchTerm}
-            onChangeText={setSearchTerm}
+            onChangeText={handleSearchInput}
             onSubmitEditing={handleSearch}
             placeholderTextColor="#999"
             returnKeyType="search"
@@ -438,6 +513,8 @@ export default function HomeScreen() {
               style={styles.searchClear}
               onPress={() => {
                 setSearchTerm('');
+                setShowAutocomplete(false);
+                setAutocompleteSuggestions([]);
                 setShowSearchModal(false);
               }}
             >
@@ -445,6 +522,34 @@ export default function HomeScreen() {
             </TouchableOpacity>
           )}
         </View>
+
+        {showAutocomplete && autocompleteSuggestions.length > 0 && (
+          <View style={styles.autocompleteContainer}>
+            <ScrollView scrollEnabled={autocompleteSuggestions.length > 3}>
+              {autocompleteSuggestions.map((quote, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.autocompleteSuggestion,
+                    index === autocompleteSuggestions.length - 1 && styles.autocompleteSuggestionLast,
+                  ]}
+                  onPress={() => handleAutocompleteSuggestionPress(quote)}
+                  activeOpacity={0.7}
+                >
+                  <Text 
+                    style={styles.autocompleteSuggestionText}
+                    numberOfLines={2}
+                  >
+                    {quote.content}
+                  </Text>
+                  <Text style={styles.autocompleteSuggestionAuthor}>
+                    — {quote.author}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
       </View>
 
       <ScrollView
