@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -132,8 +132,8 @@ const styles = StyleSheet.create({
 
 export default function HomeScreen() {
   const [searchTerm, setSearchTerm] = useState('');
-
-  const quotes = [
+  const [likedQuotes, setLikedQuotes] = useState(new Set());
+  const [quotes, setQuotes] = useState([
     {
       id: 1,
       text: "At the end of the day people won't remember what you said or did, they will remember how you made them feel.",
@@ -155,7 +155,29 @@ export default function HomeScreen() {
       discoverer: "Efedz",
       likes: 120,
     },
-  ];
+  ]);
+
+  const scrollViewRef = useRef(null);
+
+  const handleLikePress = (quoteId) => {
+    const isLiked = likedQuotes.has(quoteId);
+    const newLikedQuotes = new Set(likedQuotes);
+    
+    if (isLiked) {
+      newLikedQuotes.delete(quoteId);
+    } else {
+      newLikedQuotes.add(quoteId);
+    }
+    
+    setLikedQuotes(newLikedQuotes);
+    
+    const updatedQuotes = quotes.map(q => 
+      q.id === quoteId 
+        ? { ...q, likes: isLiked ? q.likes - 1 : q.likes + 1 }
+        : q
+    );
+    setQuotes(updatedQuotes);
+  };
 
   return (
     <View style={styles.container}>
@@ -183,8 +205,11 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      <ScrollView style={styles.quotesContainer}>
-        {quotes.map((quote) => (
+      <ScrollView
+        style={styles.quotesContainer}
+        ref={scrollViewRef}
+      >
+        {quotes.map((quote, index) => (
           <View key={quote.id} style={styles.quoteCard}>
             <Text style={styles.quoteText}>"{quote.text}"</Text>
             <View style={styles.quoteAuthor}>
@@ -197,8 +222,16 @@ export default function HomeScreen() {
             </View>
             <Text style={styles.quoteFooter}>Discoverer: {quote.discoverer}</Text>
             <View style={styles.quoteActions}>
-              <TouchableOpacity style={styles.actionBtn}>
-                <Text style={styles.actionBtnText}>❤️ {quote.likes}</Text>
+              <TouchableOpacity 
+                style={styles.actionBtn}
+                onPress={() => handleLikePress(quote.id)}
+              >
+                <Text style={{
+                  fontSize: 14,
+                  color: likedQuotes.has(quote.id) ? '#e74c3c' : '#999',
+                }}>
+                  {likedQuotes.has(quote.id) ? '❤️' : '🤍'} {quote.likes}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.actionBtn}>
                 <Text style={styles.actionBtnText}>📤 Share</Text>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import HomeScreen from './screens/HomeScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import LeaderboardScreen from './screens/LeaderboardScreen';
@@ -51,7 +52,7 @@ export default function App() {
   };
 
   return (
-    <View style={styles.container}>
+    <GestureHandlerRootView style={styles.container}>
       <View style={styles.content}>
         {activeTab === 'home' && <HomeScreen />}
         {activeTab === 'profile' && <ProfileScreen />}
@@ -69,6 +70,6 @@ export default function App() {
           </TouchableOpacity>
         ))}
       </View>
-    </View>
+    </GestureHandlerRootView>
   );
 }
